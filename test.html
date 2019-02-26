@@ -22,36 +22,89 @@ for ( let i=0; i<imageData.data.length; i+=4 ) {
 }
 context.putImageData(imageData, 0, 0);
 
-var expr = new Mul(Z, new ConstPow(new Add(Z, new Constant([-1, 0.5])), -Math.PI));
+var expr = new Mul(Z, new ConstPow(new Add(Z, new Constant([-1, 0.5])), -Math.E));
 
 const cx = 300, cy = 300, scale = 50;
-const width = 50, height = 50;
-var range = context.createImageData(width, height);
+const N = 51;
+const N0 = (N-1)/2;
+var range = context.createImageData(N, N);
+var cache = Array.from({length:N*N}, () => ({}));
+var finished = [];
 
-function look(event) {
-  const x = event.layerX-8, y = event.layerY-8;
-  const x0 = x-width/2, y0 = y-height/2;
+function compute(x, y, i, j, i_=i, j_=j) {
+  if ( finished[N*i+j] )
+    return;
+  var c = Object.assign(cache[N*i+j], cache[N*i_+j_]);
+  var z = [(x+j-cx)/scale, -(y+i-cy)/scale];
+  var val = expr.eval(z, c);
+  var rgb = toColor(val);
 
-  for ( let i=0; i<height; i++ )
-    for ( let j=0; j<width; j++ ) {
-      let val = expr.eval([(x0+j-cx)/scale, -(y0+i-cy)/scale], {});
-      let rgb = toColor(val);
+  var n = 4*(N*i+j);
+  range.data[n] = rgb[0];
+  range.data[n+1] = rgb[1];
+  range.data[n+2] = rgb[2];
+  range.data[n+3] = 255;
 
-      let n = 4*(width*i+j);
-      range.data[n] = rgb[0];
-      range.data[n+1] = rgb[1];
-      range.data[n+2] = rgb[2];
-      range.data[n+3] = 255;
+  finished[N*i+j] = true;
+  return val;
+}
+function draw(x, y) {
+  var c0 = cache[N*N0+N0];
+  cache = Array.from({length:N*N}, () => ({}));
+  cache[N*N0+N0] = c0;
+  finished = [];
+
+  var val = compute(x, y, N0, N0);
+  // console.log(val);
+  for ( let J=0; J<N/2; J++ )
+    for ( let i=1; i<N/2; i++ ) {
+      let j_ = Math.round((i-1)*J/(N/2));
+      let j = Math.round(i*J/(N/2));
+      compute(x, y, N0+i, N0+j, N0+i-1, N0+j_);
+      compute(x, y, N0+i, N0-j, N0+i-1, N0-j_);
+      compute(x, y, N0-i, N0+j, N0-i+1, N0+j_);
+      compute(x, y, N0-i, N0-j, N0-i+1, N0-j_);
+      compute(x, y, N0+j, N0+i, N0+j_, N0+i-1);
+      compute(x, y, N0-j, N0+i, N0-j_, N0+i-1);
+      compute(x, y, N0+j, N0-i, N0+j_, N0-i+1);
+      compute(x, y, N0-j, N0-i, N0-j_, N0-i+1);
     }
-  context.putImageData(range, x0, y0);
+
+  var m = 4*(N*N0 + N0);
+  range.data[m] = 0;
+  range.data[m+1] = 0;
+  range.data[m+2] = 0;
+  context.putImageData(range, x, y);
 }
-function click(event) {
-  const x = event.layerX-8, y = event.layerY-8;
-  let [[r, phi]] = func(...toRPhi((x-cx)/scale, -(y-cy)/scale));
-  console.log(r, phi);
-}
-canvas.addEventListener("mousemove", look);
-canvas.addEventListener("click", click);
+
+var [x, y] = [cx-N0, cy-N0];
+draw(x, y);
+window.addEventListener("keydown", event => {
+  switch ( event.key ) {
+    case "ArrowUp":
+      [x, y] = [x, y-1];
+      draw(x, y);
+      break;
+
+    case "ArrowDown":
+      [x, y] = [x, y+1];
+      draw(x, y);
+      break;
+
+    case "ArrowRight":
+      [x, y] = [x+1, y];
+      draw(x, y);
+      break;
+
+    case "ArrowLeft":
+      [x, y] = [x-1, y];
+      draw(x, y);
+      break;
+
+    default:
+      return;
+  }
+}, false);
 </script>
 </body>
 </html>
