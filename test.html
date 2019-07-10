@@ -14,15 +14,16 @@
 var canvas = document.getElementById("Canvas");
 var context = canvas.getContext("2d");
 var imageData = context.createImageData(canvas.width, canvas.height);
-for ( let i=0; i<imageData.data.length; i+=4 ) {
-  imageData.data[i] = 128;
-  imageData.data[i+1] = 128;
-  imageData.data[i+2] = 128;
-  imageData.data[i+3] = 255;
+for ( let n=0; n<imageData.data.length; n+=4 ) {
+  imageData.data[n] = 128;
+  imageData.data[n+1] = 128;
+  imageData.data[n+2] = 128;
+  imageData.data[n+3] = 255;
 }
 context.putImageData(imageData, 0, 0);
 
 var expr = new Mul(Z, new ConstPow(new Add(Z, new Constant([-1, 0.5])), -Math.E));
+// var expr = Expr.parse`${Z} * (${Z} - 1+0.5i)^${-Math.E}`;
 
 const cx = 300, cy = 300, scale = 50;
 const N = 51;
@@ -46,7 +47,6 @@ function compute(x, y, i, j, i_=i, j_=j) {
   range.data[n+3] = 255;
 
   finished[N*i+j] = true;
-  return val;
 }
 function draw(x, y) {
   var c0 = cache[N*N0+N0];

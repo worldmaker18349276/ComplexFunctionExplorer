@@ -1,9 +1,17 @@
+const PI = Math.PI;
+const TAU = 2*Math.PI;
 
 function toRPhi(x, y) {
   return [Math.sqrt(x*x+y*y), Math.atan2(y, x)];
 }
 function toXY(r, phi) {
   return [r*Math.cos(phi), r*Math.sin(phi)];
+}
+function modAround(phi, phi0) {
+  var dphi = phi - phi0;
+  dphi = (dphi%TAU + TAU) % TAU;
+  dphi = (dphi + PI) % TAU - PI;
+  return phi0 + dphi;
 }
 function hue2rgb(p, q, t) {
   if ( t < 0 ) t += 1;
@@ -13,7 +21,7 @@ function hue2rgb(p, q, t) {
   if ( t < 2/3 ) return p + (q - p) * (2/3 - t) * 6;
   return p;
 }
-function hslToRgb(h, s, l) {
+function hsl2rgb(h, s, l) {
   var r, g, b;
 
   if ( s == 0 ) {
@@ -30,7 +38,7 @@ function hslToRgb(h, s, l) {
 }
 function toColor(val, l=0.5) {
   var [r, phi] = toRPhi(...val);
-  return hslToRgb((phi/2/Math.PI+1)%1, Math.tanh(r), l);
+  return hsl2rgb((phi/TAU+1)%1, Math.tanh(r), l);
 }
 
 class Expr
@@ -93,19 +101,18 @@ class ConstPow extends Expr
     this.pow = pow;
     this.tag = Symbol("ConstPow");
   }
-  closeTo(phi, phi0) {
-    const T = 2*Math.PI;
-    var dphi = phi - phi0;
-    dphi = (dphi%T + T) % T;
-    dphi = (dphi + Math.PI) % T - Math.PI
-    return phi0 + dphi;
-  }
   eval(z, cache) {
     var [x, y] = this.expr.eval(z, cache);
     var [r, phi] = toRPhi(x, y);
     var phi0 = cache[this.tag] || (cache[this.tag] = phi);
-    phi = cache[this.tag] = this.closeTo(phi, phi0);
+    phi = cache[this.tag] = modAround(phi, phi0);
     var [r_, phi_] = [r**this.pow, phi*this.pow];
     return toXY(r_, phi_);
   }
+}
+
+
+class ComplexWorld
+{
+
 }
