@@ -99,8 +99,11 @@ class ConstPow extends Expr
   eval(z, cache) {
     var [x, y] = this.expr.eval(z, cache);
     var [r, phi] = toRPhi(x, y);
-    var phi0 = cache[this.tag] || (cache[this.tag] = phi);
-    phi = cache[this.tag] = modAround(phi, phi0);
+    if ( cache[this.tag] === undefined )
+      cache[this.tag] = phi;
+    var phi0 = cache[this.tag];
+    phi = modAround(phi, phi0);
+    cache[this.tag] = phi;
     var [r_, phi_] = [r**this.pow, phi*this.pow];
     return toXY(r_, phi_);
   }
